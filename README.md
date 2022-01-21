@@ -11,7 +11,9 @@ https://earthquake.usgs.gov/fdsnws/event/1/
 
 There was a problem in the app by Udacity that whenever the user had his network turned
 off while searching for the earthquakes the app displayed "No Earthquakes Found" instead of
-"No Internet Connection". This issue has been fixed in this version of the app
+"No Internet Connection". There was one another issue too. Whenever user opened the app
+without any internet connection, the app would crash due to null pointer exceptions.
+These issues have been fixed in this version of the app.
 
 Getting Started
 ---------------
