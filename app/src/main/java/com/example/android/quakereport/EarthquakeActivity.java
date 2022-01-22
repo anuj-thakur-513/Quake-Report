@@ -19,18 +19,27 @@ import android.app.LoaderManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.Loader;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+
+import android.preference.PreferenceManager;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,17 +52,17 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
      */
     private static final int EARTHQUAKE_LOADER_ID = 1;
 
-//    TextView that is displayed when the list is empty
+    //    TextView that is displayed when the list is empty
     private TextView mEmptyStateTextView;
 
-//    progress bar
+    //    progress bar
     private ProgressBar progressBar;
 
     public static final String LOG_TAG = EarthquakeActivity.class.getName();
 
     //    URL for earthquake data from the USGS dataset
     private static final String USGS_REQUEST_URL =
-            "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&orderby=time&minmag=5&limit=15";
+            "https://earthquake.usgs.gov/fdsnws/event/1/query";
 
 
     /**
@@ -62,10 +71,37 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
     private EarthquakeAdapter mAdapter;
 
     @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        int id = item.getItemId();
+        if(id == R.id.action_settings){
+            Intent settingsIntent = new Intent(this, SettingsActivity.class);
+            startActivity(settingsIntent);
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
     public Loader<List<Earthquake>> onCreateLoader(int id, Bundle args) {
-        Log.i(LOG_TAG, "Test: onCreateLoader() called...");
-//        Create a new loader for the given URL
-        return new EarthquakeLoader(this, USGS_REQUEST_URL);
+        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+        String minMagnitude = sharedPrefs.getString(
+                getString(R.string.settings_min_magnitude_key),
+                getString(R.string.settings_min_magnitude_default));
+        Uri baseUri = Uri.parse(USGS_REQUEST_URL);
+        Uri.Builder uriBuilder = baseUri.buildUpon();
+
+        uriBuilder.appendQueryParameter("format","geojson");
+        uriBuilder.appendQueryParameter("limit","15");
+        uriBuilder.appendQueryParameter("minmag",minMagnitude);
+        uriBuilder.appendQueryParameter("orderby","time");
+
+        return new EarthquakeLoader(this,uriBuilder.toString());
     }
 
     @Override
@@ -81,7 +117,7 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
         ConnectivityManager connManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connManager.getActiveNetworkInfo();
 
-        if(networkInfo != null && networkInfo.isConnected()){
+        if (networkInfo != null && networkInfo.isConnected()) {
             mEmptyStateTextView.setText(R.string.no_earthquakes);
         } else {
             mEmptyStateTextView.setText(R.string.no_internet_connection);
@@ -90,7 +126,7 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
 
 //        If there is a valid list of {@link Earthquake}s, then add them to the adapter's
 //        data set. This will trigger the ListView to update.
-        if(data != null && !data.isEmpty()){
+        if (data != null && !data.isEmpty()) {
             mAdapter.addAll(data);
         }
     }
@@ -119,7 +155,7 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
         NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
 
         // If there is a network connection, fetch data
-        if(networkInfo != null && networkInfo.isConnected()){
+        if (networkInfo != null && networkInfo.isConnected()) {
             //        Get a reference to the LoaderManager, in order to interact with loaders.
             LoaderManager loaderManager = getLoaderManager();
 
@@ -128,7 +164,7 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
             // because this activity implements the LoaderCallbacks interface).
             // Create a new adapter that takes an empty list of earthquakes as input
             Log.i(LOG_TAG, "Test: calling initLoader()...");
-            loaderManager.initLoader(EARTHQUAKE_LOADER_ID,null,this);
+            loaderManager.initLoader(EARTHQUAKE_LOADER_ID, null, this);
         } else {
             // Otherwise, display error
             // First, hide loading indicator so error message will be visible
@@ -170,8 +206,8 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
             }
         });
 
-        EarthquakeAsyncTask task = new EarthquakeAsyncTask();
-        task.execute(USGS_REQUEST_URL);
+//        EarthquakeAsyncTask task = new EarthquakeAsyncTask();
+//        task.execute(USGS_REQUEST_URL);
     }
 
     /**
